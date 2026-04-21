@@ -1,0 +1,9 @@
+# Place the extracted Speech Commands dataset here.
+# Expected structure:
+#   speech_commands/
+#     left/   *.wav
+#     right/  *.wav
+#     up/     *.wav
+#     down/   *.wav
+#     stop/   *.wav
+#     ...     (other commands become the "unknown" class)
