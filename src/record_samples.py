@@ -68,19 +68,28 @@ def _require_audio_libs() -> None:
 # ---------------------------------------------------------------------------
 
 
-def record_clip(duration: float) -> np.ndarray:
+def get_default_mic() -> tuple[int, str]:
+    """Return (device_index, name) of the system default input device."""
+    import sounddevice as sd
+    device_index = sd.default.device[0]
+    info = sd.query_devices(device_index)
+    return device_index, info["name"]
+
+
+def record_clip(duration: float, device: int) -> np.ndarray:
     """
-    Record a single mono clip from the default microphone.
+    Record a single mono clip from the given input device.
 
     Args:
         duration: Recording length in seconds.
+        device:   sounddevice device index to record from.
 
     Returns:
         np.ndarray: float32 waveform, shape (n_samples,).
     """
     import sounddevice as sd
     n_samples = int(duration * SAMPLE_RATE)
-    audio = sd.rec(n_samples, samplerate=SAMPLE_RATE, channels=1, dtype="float32")
+    audio = sd.rec(n_samples, samplerate=SAMPLE_RATE, channels=1, dtype="float32", device=device)
     sd.wait()
     return audio.flatten()
 
@@ -143,9 +152,12 @@ def run_session(speaker: str, reps: int) -> None:
     total    = len(ENROLLMENT_COMMANDS) * reps
     recorded = 0
 
+    device_index, device_name = get_default_mic()
+
     print()
     print("=" * 58)
     print(f"  Enrollment recording — speaker : {speaker.upper()}")
+    print(f"  Microphone : [{device_index}] {device_name}")
     print(f"  Commands : {ENROLLMENT_COMMANDS}")
     print(f"  Reps/cmd : {reps}  |  Clip length : {ENROLLMENT_DURATION:.1f} s")
     print(f"  Total    : {total} clips")
@@ -172,7 +184,7 @@ def run_session(speaker: str, reps: int) -> None:
                 time.sleep(0.75)
             print("  [RECORDING]")
 
-            audio = record_clip(ENROLLMENT_DURATION)
+            audio = record_clip(ENROLLMENT_DURATION, device_index)
             save_wav(audio, out_path)
 
             recorded += 1
